@@ -1,0 +1,221 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASHISH LIVE TV</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090909;color:white;font-family:Arial}
+header{background:linear-gradient(90deg,#e50914,#650000);padding:22px;text-align:center;font-size:25px;font-weight:bold}
+nav{display:flex;justify-content:center;gap:10px;padding:15px;background:#171717}
+button{background:#e50914;color:white;border:0;border-radius:7px;padding:11px 15px;cursor:pointer}
+input,select{width:100%;padding:12px;margin:8px 0;background:#222;color:white;border:1px solid #555;border-radius:7px}
+h2{padding-left:15px}
+.search{padding:15px}
+.categories{display:flex;gap:8px;overflow-x:auto;padding:10px}
+.categories button{white-space:nowrap}
+.channels{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px}
+.channel{background:#202020;padding:18px 8px;border-radius:12px;text-align:center;border:1px solid #383838}
+.logo{font-size:38px}
+.channel p{font-weight:bold}
+.panel{display:none;background:#171717;margin:15px;padding:15px;border-radius:12px}
+#player{display:none;margin:15px;padding:15px;background:#171717;border-radius:12px}
+video{width:100%;background:black}
+footer{text-align:center;padding:25px;color:#aaa}
+</style>
+</head>
+<body>
+
+<header>📺 ASHISH LIVE TV</header>
+
+<nav>
+<button onclick="showHome()">🏠 HOME</button>
+<button onclick="showAdmin()">🔐 ADMIN</button>
+</nav>
+
+<div id="home">
+<div class="search">
+<input id="search" placeholder="🔍 Search Channel..." oninput="render()">
+</div>
+
+<h2>🔥 Categories</h2>
+<div class="categories">
+<button onclick="setCategory('All')">All</button>
+<button onclick="setCategory('News')">News</button>
+<button onclick="setCategory('Movies')">Movies</button>
+<button onclick="setCategory('Music')">Music</button>
+<button onclick="setCategory('Sports')">Sports</button>
+<button onclick="setCategory('Entertainment')">Entertainment</button>
+</div>
+
+<h2>📡 LIVE CHANNELS</h2>
+<div class="channels" id="channels"></div>
+</div>
+
+<div id="player">
+<h2 id="playerTitle">Video Player</h2>
+<video id="video" controls playsinline></video>
+<p>अधिकृत MP4 वीडियो लिंक इस्तेमाल करें।</p>
+<button onclick="closePlayer()">Close Player</button>
+</div>
+
+<div class="panel" id="admin">
+<h2>🔐 ADMIN PANEL</h2>
+<p>➕ Add New Channel</p>
+
+<input id="channelName" placeholder="Channel Name">
+
+<select id="channelCategory">
+<option>News</option>
+<option>Movies</option>
+<option>Music</option>
+<option>Sports</option>
+<option>Entertainment</option>
+</select>
+
+<input id="channelLogo" placeholder="Channel Logo Emoji">
+<input id="channelUrl" placeholder="Authorized MP4 URL">
+
+<button onclick="addChannel()">ADD CHANNEL</button>
+
+<h3>Manage Channels</h3>
+<div id="manage"></div>
+</div>
+
+<footer>© 2026 ASHISH LIVE TV</footer>
+
+<script>
+let channels=JSON.parse(localStorage.getItem("ashishChannels")||"null")||[
+{name:"Demo News",category:"News",logo:"📰",url:""},
+{name:"Demo Movies",category:"Movies",logo:"🎬",url:""},
+{name:"Demo Music",category:"Music",logo:"🎵",url:""},
+{name:"Demo Sports",category:"Sports",logo:"🏏",url:""}
+];
+
+let selectedCategory="All";
+
+function save(){
+localStorage.setItem("ashishChannels",JSON.stringify(channels));
+}
+
+function safe(value){
+return String(value).replace(/[&<>"']/g,c=>({
+"&":"&amp;","<":"&lt;",">":"&gt;",
+'"':"&quot;","'":"&#39;"
+}[c]));
+}
+
+function render(){
+let search=document.getElementById("search").value.toLowerCase();
+let list=channels.map((c,i)=>({...c,index:i})).filter(c=>
+(selectedCategory==="All"||c.category===selectedCategory)&&
+c.name.toLowerCase().includes(search)
+);
+
+document.getElementById("channels").innerHTML=list.map(c=>`
+<div class="channel">
+<div class="logo">${safe(c.logo)}</div>
+<p>${safe(c.name)}</p>
+<small>${safe(c.category)}</small><br><br>
+<button onclick="playChannel(${c.index})">▶ PLAY</button>
+</div>
+`).join("")||"<p>No channels found</p>";
+}
+
+function setCategory(category){
+selectedCategory=category;
+render();
+}
+
+function playChannel(index){
+let c=channels[index];
+if(!c.url){
+alert("इस Demo Channel में वीडियो लिंक नहीं है।");
+return;
+}
+let video=document.getElementById("video");
+video.src=c.url;
+document.getElementById("playerTitle").innerText=c.name;
+document.getElementById("player").style.display="block";
+video.play().catch(()=>alert("वीडियो नहीं चल पाया। लिंक जांचें।"));
+}
+
+function closePlayer(){
+let video=document.getElementById("video");
+video.pause();
+video.removeAttribute("src");
+video.load();
+document.getElementById("player").style.display="none";
+}
+
+function showAdmin(){
+document.getElementById("home").style.display="none";
+document.getElementById("player").style.display="none";
+document.getElementById("admin").style.display="block";
+manageChannels();
+}
+
+function showHome(){
+document.getElementById("admin").style.display="none";
+document.getElementById("home").style.display="block";
+render();
+}
+
+function addChannel(){
+let name=document.getElementById("channelName").value.trim();
+let category=document.getElementById("channelCategory").value;
+let logo=document.getElementById("channelLogo").value.trim()||"📺";
+let url=document.getElementById("channelUrl").value.trim();
+
+if(!name){
+alert("Channel Name लिखें");
+return;
+}
+
+if(url){
+try{
+let parsed=new URL(url);
+if(parsed.protocol!=="https:"&&parsed.protocol!=="http:"){
+throw new Error();
+}
+}catch(e){
+alert("Valid video URL डालें");
+return;
+}
+}
+
+channels.push({name,category,logo,url});
+save();
+document.getElementById("channelName").value="";
+document.getElementById("channelLogo").value="";
+document.getElementById("channelUrl").value="";
+manageChannels();
+render();
+alert("Channel Added Successfully!");
+}
+
+function deleteChannel(index){
+if(confirm("क्या यह चैनल हटाना चाहते हैं?")){
+channels.splice(index,1);
+save();
+manageChannels();
+render();
+}
+}
+
+function manageChannels(){
+document.getElementById("manage").innerHTML=channels.map((c,i)=>`
+<div style="background:#292929;padding:12px;margin:8px 0;border-radius:8px">
+${safe(c.logo)} ${safe(c.name)}
+<button onclick="deleteChannel(${i})">DELETE</button>
+</div>
+`).join("");
+}
+
+render();
+</script>
+
+</body>
+</html>
